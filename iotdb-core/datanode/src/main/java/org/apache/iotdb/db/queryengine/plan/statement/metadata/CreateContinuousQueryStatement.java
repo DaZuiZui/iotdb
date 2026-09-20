@@ -278,11 +278,17 @@ public class CreateContinuousQueryStatement extends Statement implements IConfig
                     36L * 3_600_000L, java.util.concurrent.TimeUnit.MILLISECONDS));
     if (minimumElapsed < minimumEvery) {
       throw new SemanticException(
-          String.format(
-              DataNodeQueryMessages
-                  .CQ_EVERY_INTERVAL_D_SHOULD_NOT_BE_LOWER_THAN_THE_CONTINUOUS_QUERY_MINIMUM_EVERY_INTERVAL,
-              everyInterval,
-              minimumEvery));
+          everyDuration.monthDuration == 0
+              ? String.format(
+                  DataNodeQueryMessages
+                      .CQ_EVERY_INTERVAL_D_SHOULD_NOT_BE_LOWER_THAN_THE_CONTINUOUS_QUERY_MINIMUM_EVERY_INTERVAL,
+                  everyInterval,
+                  minimumEvery)
+              : String.format(
+                  DataNodeQueryMessages
+                      .CQ_EVERY_INTERVAL_SHOULD_NOT_BE_LOWER_THAN_THE_CONTINUOUS_QUERY_MINIMUM_EVERY_INTERVAL,
+                  formatDuration(everyDuration),
+                  minimumEvery));
     }
     if (!isPositive(everyDuration)) {
       throw new SemanticException(

@@ -1944,6 +1944,8 @@ public final class DataNodeQueryMessages {
       "Sorting by device is only supported in ALIGN BY DEVICE queries.";
   public static final String CQ_EVERY_INTERVAL_D_SHOULD_NOT_BE_LOWER_THAN_THE_CONTINUOUS_QUERY_MINIMUM_EVERY_INTERVAL =
       "CQ: Every interval [%d] should not be lower than the `continuous_query_minimum_every_interval` [%d] configured.";
+  public static final String CQ_EVERY_INTERVAL_SHOULD_NOT_BE_LOWER_THAN_THE_CONTINUOUS_QUERY_MINIMUM_EVERY_INTERVAL =
+      "CQ: Every interval [%s] should not be lower than the `continuous_query_minimum_every_interval` [%d] configured.";
   public static final String CQ_THE_START_TIME_OFFSET_SHOULD_BE_GREATER_THAN_END_TIME_OFFSET =
       "CQ: The start time offset should be greater than end time offset.";
   public static final String CQ_THE_START_TIME_OFFSET_SHOULD_BE_GREATER_THAN_OR_EQUAL_TO_EVERY_INTERVAL =

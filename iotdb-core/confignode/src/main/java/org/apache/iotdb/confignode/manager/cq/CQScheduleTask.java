@@ -160,6 +160,11 @@ public class CQScheduleTask implements Runnable {
       this.occurrenceIndex =
           CQCalendarUtils.firstOccurrenceIndex(
               boundaryTime, everyDuration, firstExecutionTime, scheduleZone);
+      long expectedExecution = occurrenceAt(this.occurrenceIndex);
+      if (expectedExecution != firstExecutionTime) {
+        throw new IllegalArgumentException(
+            ManagerMessages.EXCEPTION_CQ_OCCURRENCE_INDEX_DOES_NOT_MATCH_EXECUTION_TIME_7E4B91A2);
+      }
     }
   }
 
@@ -281,27 +286,21 @@ public class CQScheduleTask implements Runnable {
     long endTime = executionTime - endTimeOffset;
     if (calendarAware) {
       if (currentOccurrenceIndex < 0) {
-        currentOccurrenceIndex =
-            CQCalendarUtils.firstOccurrenceIndex(
-                boundaryTime, everyDuration, executionTime, scheduleZone);
+        throw new IllegalStateException(
+            ManagerMessages.MESSAGE_CQ_DOES_NOT_HAVE_OCCURRENCE_INDEX_METADATA_929A7F0C);
       }
-      if (CQCalendarUtils.occurrence(
-              boundaryTime, everyDuration, currentOccurrenceIndex, scheduleZone)
-          != executionTime) {
-        currentOccurrenceIndex = Math.max(0, currentOccurrenceIndex - 1);
+      long expectedExecution =
+          CQCalendarUtils.occurrence(
+              boundaryTime, everyDuration, currentOccurrenceIndex, scheduleZone);
+      if (expectedExecution != executionTime) {
+        throw new IllegalStateException(
+            ManagerMessages.EXCEPTION_CQ_OCCURRENCE_INDEX_DOES_NOT_MATCH_EXECUTION_TIME_7E4B91A2);
       }
       startTime = calculateCalendarRangeEndpoint(startDuration, currentOccurrenceIndex);
       endTime = calculateCalendarRangeEndpoint(endDuration, currentOccurrenceIndex);
-      // A RANGE with an omitted end offset defaults to the current occurrence. Guard against
-      // malformed/legacy requests that deserialize both offsets identically; GroupByMonthFilter
-      // cannot initialize an empty range and would otherwise throw an array bounds exception.
       if (endTime <= startTime) {
-        endTime =
-            CQCalendarUtils.applyVector(
-                startTime,
-                everyDuration.monthDuration,
-                everyDuration.nonMonthDuration,
-                scheduleZone);
+        throw new IllegalArgumentException(
+            ManagerMessages.EXCEPTION_CQ_RANGE_END_MUST_BE_GREATER_THAN_START_3C91E8B4);
       }
     }
 

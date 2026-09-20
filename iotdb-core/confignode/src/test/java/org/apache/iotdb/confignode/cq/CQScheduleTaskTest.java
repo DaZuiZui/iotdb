@@ -120,6 +120,28 @@ public class CQScheduleTaskTest {
     assertEquals(firstOccurrence, executionTime.getLong(task));
   }
 
+  @Test(expected = IllegalArgumentException.class)
+  public void testCalendarConstructorRejectsMismatchedFirstOccurrence() {
+    TCreateCQReq req =
+        new TCreateCQReq(
+            "calendarCq",
+            0,
+            0,
+            0,
+            0,
+            TimeoutPolicy.BLOCKED.getType(),
+            "select 1",
+            "create cq calendarCq",
+            "UTC",
+            "root");
+    req.setDurationEncodingVersion((short) 1);
+    req.setEveryDuration(new TCQDuration(1, 0));
+    req.setStartOffsetDuration(new TCQDuration(1, 0));
+    req.setEndOffsetDuration(new TCQDuration(0, 0));
+    req.setBoundaryExplicit(false);
+    new CQScheduleTask(req, 1L, "token", null, null);
+  }
+
   @Test
   public void testCalendarOccurrencesRecomputeFromOriginalBoundary() {
     ZoneId zone = ZoneId.of("UTC");

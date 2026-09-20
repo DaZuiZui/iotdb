@@ -18,6 +18,7 @@
 package org.apache.iotdb.confignode.manager.cq;
 
 import org.apache.iotdb.commons.conf.CommonDescriptor;
+import org.apache.iotdb.commons.queryengine.utils.DateTimeUtils;
 import org.apache.iotdb.confignode.i18n.ManagerMessages;
 
 import org.apache.tsfile.utils.TimeDuration;
@@ -25,7 +26,6 @@ import org.apache.tsfile.utils.TimeDuration;
 import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 
 /** Pure calendar arithmetic used by CQ scheduling and recovery. */
 public final class CQCalendarUtils {
@@ -39,15 +39,16 @@ public final class CQCalendarUtils {
 
   public static long applyVector(long base, long months, long fixed, ZoneId zone) {
     try {
-      Instant instant = toInstant(base);
-      if (months != 0) {
-        ZonedDateTime local = instant.atZone(zone);
-        instant = local.toLocalDateTime().plusMonths(months).atZone(zone).toInstant();
+      // Fixed-only vectors must stay on elapsed-tick arithmetic. Routing them through the
+      // calendar helper would re-resolve local time with atZone and can shift DST-overlap
+      // instants even when monthPart is zero.
+      if (months == 0) {
+        return Math.addExact(base, fixed);
       }
-      if (fixed != 0) {
-        instant = instant.plusNanos(toNanos(fixed));
-      }
-      return fromInstant(instant);
+      // Reuse the GROUP BY TIME helper so CQ cadence, RANGE, and month buckets share DST
+      // overlap/gap rules (LocalDateTime.plusMonths then atZone).
+      TimeDuration duration = new TimeDuration(Math.toIntExact(months), fixed);
+      return DateTimeUtils.calcPositiveIntervalByMonth(base, duration, zone);
     } catch (ArithmeticException | DateTimeException e) {
       throw new IllegalArgumentException(
           ManagerMessages.EXCEPTION_CQ_TIMESTAMP_OVERFLOWS_CONFIGURED_PRECISION_F5FB230C, e);
@@ -95,19 +96,6 @@ public final class CQCalendarUtils {
     return occurrence(boundary, every, index, zone);
   }
 
-  private static Instant toInstant(long value) {
-    String precision = CommonDescriptor.getInstance().getConfig().getTimestampPrecision();
-    if ("us".equals(precision)) {
-      return Instant.ofEpochSecond(
-          Math.floorDiv(value, 1_000_000), Math.floorMod(value, 1_000_000) * 1_000L);
-    }
-    if ("ns".equals(precision)) {
-      return Instant.ofEpochSecond(
-          Math.floorDiv(value, 1_000_000_000), Math.floorMod(value, 1_000_000_000));
-    }
-    return Instant.ofEpochMilli(value);
-  }
-
   private static long fromInstant(Instant instant) {
     String precision = CommonDescriptor.getInstance().getConfig().getTimestampPrecision();
     try {
@@ -125,16 +113,5 @@ public final class CQCalendarUtils {
       throw new IllegalArgumentException(
           ManagerMessages.EXCEPTION_CQ_TIMESTAMP_OVERFLOWS_CONFIGURED_PRECISION_F5FB230C, e);
     }
-  }
-
-  private static long toNanos(long fixed) {
-    String precision = CommonDescriptor.getInstance().getConfig().getTimestampPrecision();
-    if ("us".equals(precision)) {
-      return Math.multiplyExact(fixed, 1_000L);
-    }
-    if ("ns".equals(precision)) {
-      return fixed;
-    }
-    return Math.multiplyExact(fixed, 1_000_000L);
   }
 }

@@ -174,6 +174,20 @@ public class CQCalendarUtilsTest {
   }
 
   @Test
+  public void testCalendarOccurrenceMatchesGroupByTimeHelper() {
+    ZoneId newYork = ZoneId.of("America/New_York");
+    long boundary = epochTimestamp(2024, 1, 3, 1, 30, newYork);
+    TimeDuration tenMonths = new TimeDuration(10, 0);
+    long cqOccurrence = CQCalendarUtils.occurrence(boundary, tenMonths, 1, newYork);
+    long groupBy =
+        org.apache.iotdb.commons.queryengine.utils.DateTimeUtils.calcPositiveIntervalByMonth(
+            boundary, tenMonths, newYork);
+    assertEquals(groupBy, cqOccurrence);
+    // DST overlap: GROUP BY / atZone selects the earlier offset (-04:00 = 05:30Z).
+    assertEquals(epochTimestamp(2024, 11, 3, 1, 30, newYork), cqOccurrence);
+  }
+
+  @Test
   public void testDstUsesZoneRulesForCalendarAndElapsedParts() {
     ZoneId newYork = ZoneId.of("America/New_York");
     long monthBoundary = epochTimestamp(2024, 2, 10, 2, 30, newYork);

@@ -2075,6 +2075,9 @@ public final class DataNodeQueryMessages {
   public static final String CQ_EVERY_INTERVAL_D_SHOULD_NOT_BE_LOWER_THAN_THE_CONTINUOUS_QUERY_MINIMUM_EVERY_INTERVAL =
 
       "CQ：every interval [%d] 不应小于配置项 `continuous_query_minimum_every_interval` [%d]。";
+  public static final String CQ_EVERY_INTERVAL_SHOULD_NOT_BE_LOWER_THAN_THE_CONTINUOUS_QUERY_MINIMUM_EVERY_INTERVAL =
+
+      "CQ：every interval [%s] 不应小于配置项 `continuous_query_minimum_every_interval` [%d]。";
   public static final String CQ_THE_START_TIME_OFFSET_SHOULD_BE_GREATER_THAN_END_TIME_OFFSET =
 
       "CQ：开始时间偏移量应大于结束时间偏移量。";

@@ -331,6 +331,11 @@ public class NodeManager {
   public DataSet registerDataNode(TDataNodeRegisterReq req) {
     DataNodeRegisterResp resp = new DataNodeRegisterResp();
     resp.setConfigNodeList(getRegisteredConfigNodes());
+    TSStatus capabilityStatus = validateDurationCapability(req.getVersionInfo());
+    if (capabilityStatus != null) {
+      resp.setStatus(capabilityStatus);
+      return resp;
+    }
 
     // Create a new DataNodeHeartbeatCache and force update NodeStatus
     int dataNodeId = nodeInfo.generateNextNodeId();
@@ -371,13 +376,18 @@ public class NodeManager {
   }
 
   public TDataNodeRestartResp updateDataNodeIfNecessary(TDataNodeRestartReq req) {
+    TDataNodeRestartResp resp = new TDataNodeRestartResp();
+    resp.setConfigNodeList(getRegisteredConfigNodes());
+    TSStatus capabilityStatus = validateDurationCapability(req.getVersionInfo());
+    if (capabilityStatus != null) {
+      resp.setStatus(capabilityStatus);
+      return resp;
+    }
     final String clusterId =
         configManager
             .getClusterManager()
             .getClusterIdWithRetry(
                 CommonDescriptor.getInstance().getConfig().getCnConnectionTimeoutInMS() / 2);
-    TDataNodeRestartResp resp = new TDataNodeRestartResp();
-    resp.setConfigNodeList(getRegisteredConfigNodes());
     if (clusterId == null) {
       resp.setStatus(
           new TSStatus(TSStatusCode.GET_CLUSTER_ID_ERROR.getStatusCode())
@@ -473,7 +483,7 @@ public class NodeManager {
   }
 
   public TConfigNodeRegisterResp registerConfigNode(TConfigNodeRegisterReq req) {
-    TSStatus capabilityStatus = validateConfigNodeDurationCapability(req.getVersionInfo());
+    TSStatus capabilityStatus = validateDurationCapability(req.getVersionInfo());
     if (capabilityStatus != null) {
       return new TConfigNodeRegisterResp().setStatus(capabilityStatus).setConfigNodeId(-1);
     }
@@ -486,7 +496,7 @@ public class NodeManager {
   }
 
   public TSStatus updateConfigNodeIfNecessary(int configNodeId, TNodeVersionInfo versionInfo) {
-    TSStatus capabilityStatus = validateConfigNodeDurationCapability(versionInfo);
+    TSStatus capabilityStatus = validateDurationCapability(versionInfo);
     if (capabilityStatus != null) {
       return capabilityStatus;
     }
@@ -504,7 +514,7 @@ public class NodeManager {
     return ClusterNodeStartUtils.ACCEPT_NODE_RESTART;
   }
 
-  private TSStatus validateConfigNodeDurationCapability(TNodeVersionInfo versionInfo) {
+  private TSStatus validateDurationCapability(TNodeVersionInfo versionInfo) {
     if (!supportsDurationEncodingV1(versionInfo)
         && configManager.getCQManager().hasCalendarDurationCQ()) {
       return new TSStatus(TSStatusCode.SEMANTIC_ERROR.getStatusCode())
